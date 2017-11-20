@@ -1,28 +1,28 @@
-mvnHome = tool 'M3'
-
 node {
 
-    withMaven(maven:'maven') {
+    checkout scm
+    mvnHome = tool 'M3'
 
 
-        stage('Build') {
-            sh "${mvnHome}/bin/mvn' clean install"
-
-            def pom = readMavenPom file:'pom.xml'
-            print pom.version
-            env.version = pom.version
-        }
-
-        stage('Image') {
-                sh "docker build -t piomin/account-service ."
-
-        }
-
-        stage ('Prod') {
-                sh "kubectl apply -f deployment.yaml"      
-        }
+    env.DOCKER_API_VERSION="1.23"
     
+    sh "git rev-parse --short HEAD > commit-id"
 
-    }
+    tag = readFile('commit-id').replace("\n", "").replace("\r", "")
+    appName = "account-service"
+    registryHost = "minikube/"
+    imageName = "${registryHost}${appName}:${tag}"
+    env.BUILDIMG=imageName
+
+    stage "Build"
+    
+        sh "'${mvnHome}/bin/mvn' clean install"
+        sh "docker build -t piomin/account-service ."
+
+
+    stage "Deploy"
+
+        sh " kubectl apply -f deployment-account.yml"
+        sh "kubectl rollout status deployment/account-service"
 
 }
