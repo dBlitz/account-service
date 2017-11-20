@@ -1,16 +1,12 @@
- using hostname.
+mvnHome = tool 'M3'
 
-[code language="java"]
 node {
 
     withMaven(maven:'maven') {
 
-        stage('Checkout') {
-            git url: 'https://github.com/piomin/sample-spring-microservices.git', credentialsId: 'github-piomin', branch: 'master'
-        }
 
         stage('Build') {
-            sh 'mvn clean install'
+            sh ''${mvnHome}/bin/mvn' clean install'
 
             def pom = readMavenPom file:'pom.xml'
             print pom.version
@@ -18,19 +14,14 @@ node {
         }
 
         stage('Image') {
-            dir ('account-service') {
-                def app = docker.build "localhost:5000/account-service:${env.version}"
-                app.push()
-            }
+                sh "docker build -t piomin/account-service ."
+
         }
 
-        stage ('Run') {
-            docker.image("localhost:5000/account-service:${env.version}").run('-p 2222:2222 -h account --name account --link discovery')
+        stage ('Prod') {
+                sh "kubectl apply -f deployment.yaml"      
         }
-
-        stage ('Final') {
-            build job: 'customer-service-pipeline', wait: false
-        }      
+    
 
     }
 
