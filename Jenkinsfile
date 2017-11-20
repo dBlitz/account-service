@@ -8,12 +8,6 @@ node {
     
     sh "git rev-parse --short HEAD > commit-id"
 
-    tag = readFile('commit-id').replace("\n", "").replace("\r", "")
-    appName = "account-service"
-    registryHost = "minikube/"
-    imageName = "${registryHost}${appName}:${tag}"
-    env.BUILDIMG=imageName
-
     stage "Build"
     
         sh "'${mvnHome}/bin/mvn' clean install"
